@@ -1,15 +1,8 @@
-<!--
- Copyright (c) 2018 ml5
-
- This software is released under the MIT License.
- https://opensource.org/licenses/MIT
--->
-
+<!DOCTYPE html>
 <html>
-
 <head>
   <meta charset="UTF-8">
-  <title>PoseNet example using p5.js</title>
+  <title>PoseNet Gesture Detction</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/p5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/addons/p5.dom.min.js"></script>
@@ -20,14 +13,37 @@
     -webkit-transform:rotateY(180deg); /* Safari and Chrome */
     -moz-transform:rotateY(180deg); /* Firefox */
   }
+
+  .bigText {
+    width: 100%;
+		margin: 0;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		color: #000;
+		z-index: 2;
+		font-size: 15vmin;
+    font-family: Arial, sans-serif;
+  }
+
+  #points {
+    border-style: solid;
+    border-color: darkgray;
+    border-width: 2px;
+    border-radius: 5px;
+    background-color: lightgray;
+    font-family: monospace;
+    display: none;
+  }
   </style>
 </head>
 
 <body>
-  <p id='status'>Loading model...</p>
-  <p id='error' style='display:none; color: red;'>Loading model...</p>
-  <video id="video" playsinline></video>
-  <script src="sketch.js" type="module"></script>
+  <div style="text-align: center;"><p id='status' class="bigText">Loading model...</p>
+  <p id='error' style='display:none; color: red;' class="bigText"></p></div>
+  <script src="config.js"></script>
+  <script src="sketch.js" <!--type="module"-->></script>
 </body>
 
 </html>

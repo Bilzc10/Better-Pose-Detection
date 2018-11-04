@@ -1,5 +1,10 @@
-import * as config from './config.js';
+// Parse URL and modify variables based on url parameters
+var url = new URL(window.location.href);
 
+var showDataPoints = (url.searchParams.get("showDataPoints") != null || config.showDataPointsDefault) && !config.ignoreUrlParameters; // ?showDataPoints
+var faceUser = url.searchParams.get("faceEnvironment") == null && config.faceUserDefault && !config.ignoreUrlParameters; // ?faceEnvironment
+
+// Detect OS and if it's mobile
 function isAndroid() {
   return /Android/i.test(navigator.userAgent);
 }
@@ -12,38 +17,18 @@ function isMobile() {
   return isAndroid() || isiOS();
 }
 
+const mobile = isMobile();
+
 let poseNet;
 let poses = [];
-
-//const video = document.getElementById('video');
-//video.width = videoWidth;
-//video.height = videoHeight;
-
-const mobile = isMobile();
 
 var useVideo = true;
 var useAudio = false;
 
-function setup() {
+function setup() { // Setup PoseNet
   createCanvas(640, 480);
-  /*if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    const stream = navigator.mediaDevices.getUserMedia({
-      'audio': false,
-      'video': {
-        facingMode: 'user',
-        width: mobile ? undefined : videoWidth,
-        height: mobile ? undefined : videoHeight,
-      },
-    });
-    video.srcObject = stream;
-    video.play();
-  }
-  else {
-    document.getElementById("error").innerHTML = "ERAR: Cant capture media";
-    document.getElementById("error").style.dislay = "inline";
-    return;
-  }*/
 
+  // Functions stolen from poseNet because it didnt allow the amount of control I wanted
   function addElement(elt, pInst, media) {
     var node = pInst._userNode ? pInst._userNode : document.body;
     node.appendChild(elt);
@@ -52,7 +37,8 @@ function setup() {
     return c;
   }
 
-  p5._validateParameters('createCapture', arguments);
+  // function createCapture() from poseNet
+  //p5._validateParameters('createCapture', arguments);
   var constraints;
   if (navigator.getUserMedia) {
     var elt = document.createElement('video');
@@ -78,7 +64,10 @@ function setup() {
       }
     );
   } else {
-    throw 'getUserMedia not supported in this browser';
+    let error = "getUserMedia not supported in this browser";
+    document.getElementById("error").innerHTML = error
+    document.getElementById("error").style.display = "inline";
+    throw error;
   }
   var c = addElement(elt, this, true);
   c.loadedmetadata = false;
@@ -95,12 +84,11 @@ function setup() {
     c.loadedmetadata = true;
   });
   video = c;
-  console.log(video);
 
   video.size(width, height);
 
   // Create a new poseNet method with a single detection
-  poseNet = ml5.poseNet(video, {imageScaleFactor: config.advanced.imageScaleFactor,outputStride: config.advanced.outputStride,flipHorizontal: config.advanced.flipHorizontal,minConfidence: config.advanced.minConfidence,maxPoseDetections: config.advanced.maxPoseDetections,scoreThreshold: config.advanced.scoreThreshold,nmsRadius: config.advanced.nmsRadius,detectionType: config.singlePoseDetection ? 'single' : 'multiple',multiplier: isMobile() ? config.advanced.multiplierDefault : config.advanced.multiplierDefaultMobile}, modelReady);
+  poseNet = ml5.poseNet(video, {imageScaleFactor: config.advanced.imageScaleFactor, outputStride: config.advanced.outputStride, flipHorizontal: config.advanced.flipHorizontal, minConfidence: config.advanced.minConfidence, maxPoseDetections: config.advanced.maxPoseDetections, scoreThreshold: config.advanced.scoreThreshold, nmsRadius: config.advanced.nmsRadius, detectionType: config.singlePoseDetection ? 'single' : 'multiple', multiplier: isMobile() ? config.advanced.multiplierDefault : config.advanced.multiplierDefaultMobile}, modelReady);
   // This sets up an event that fills the global variable "poses"
   // with an array every time new poses are detected
   poseNet.on('pose', function(results) {
@@ -111,12 +99,23 @@ function setup() {
 }
 
 function modelReady() {
+  let canvas = document.getElementsByTagName("canvas")[0];
+
+  if (showDataPoints) {
+    let div = document.createElement("div");
+    div.id = "points";
+    div.style.display = "block";
+    document.getElementsByTagName("body")[0].appendChild(div);
+  }
+
   document.getElementById("status").style.display = "none";
 
-  if (config.flipFrontCam && config.faceUserDefault)
-    document.getElementsByTagName("canvas")[0].classList.add("flip180");
+  canvas.classList.add("canvasMain");
+
+  if (config.flipFrontCam && faceUser)
+    canvas.classList.add("flip180");
   else
-    document.getElementsByTagName("canvas")[0].classList.remove("flip180");
+    canvas.classList.remove("flip180");
 }
 
 function draw() {
@@ -131,6 +130,7 @@ function draw() {
 function drawKeypoints()  {
   // Loop through all the poses detected
   for (let i = 0; i < poses.length; i++) {
+    if (showDataPoints) document.getElementById("points").innerHTML = JSON.stringify(poses); // Print poses array if needed
     // For each pose detected, loop through all the keypoints
     let pose = poses[i].pose;
     for (let j = 0; j < pose.keypoints.length; j++) {
