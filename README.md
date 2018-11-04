@@ -27,7 +27,9 @@ ___ignoreUrlParameters___
 *true* - URL parameters are ignored and cannot modify the function of the program  
 *false* **(default)** - URL parameters are allowed to modify the function of the program  
 ### URL Parameters
-#### Include parameters in the url with no values _(ex: `www.example.com/Gesture-Detection/?faceEnvironment&showDataPoints/`)_  
+#### Include parameters in the url with no values
+_(ex: `www.example.com/Gesture-Detection/?faceEnvironment&showDataPoints/`)_  
+
 ___faceEnvironment___  
 Attempts to use rear facing camera if the device has one.  
 
