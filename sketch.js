@@ -1,8 +1,11 @@
 // Parse URL and modify variables based on url parameters
 var url = new URL(window.location.href);
 
-var showDataPoints = (url.searchParams.get("showDataPoints") != null || config.showDataPointsDefault) && !config.ignoreUrlParameters; // ?showDataPoints
-var faceUser = url.searchParams.get("faceEnvironment") == null && config.faceUserDefault && !config.ignoreUrlParameters; // ?faceEnvironment
+var showDataPoints = config.ignoreUrlParameters ? config.showDataPointsDefault : (url.searchParams.get("showDataPoints") != null || config.showDataPointsDefault); // ?showDataPoints
+var faceUser = config.ignoreUrlParameters ? config.faceUserDefault : (url.searchParams.get("faceEnvironment") == null && config.faceUserDefault); // ?faceEnvironment
+var multi = url.searchParams.get("multi") != null || url.searchParams.get("multiPose") != null ;
+var single = url.searchParams.get("single") != null || url.searchParams.get("singlePose") != null ;
+var singlePose = ((single && multi) || (!single && !multi) || config.ignoreUrlParameters) ? config.singlePoseDetection : single;
 
 // Detect OS and if it's mobile
 function isAndroid() {
@@ -88,7 +91,7 @@ function setup() { // Setup PoseNet
   video.size(width, height);
 
   // Create a new poseNet method with a single detection
-  poseNet = ml5.poseNet(video, {imageScaleFactor: config.advanced.imageScaleFactor, outputStride: config.advanced.outputStride, flipHorizontal: config.advanced.flipHorizontal, minConfidence: config.advanced.minConfidence, maxPoseDetections: config.advanced.maxPoseDetections, scoreThreshold: config.advanced.scoreThreshold, nmsRadius: config.advanced.nmsRadius, detectionType: config.singlePoseDetection ? 'single' : 'multiple', multiplier: isMobile() ? config.advanced.multiplierDefault : config.advanced.multiplierDefaultMobile}, modelReady);
+  poseNet = ml5.poseNet(video, {imageScaleFactor: config.advanced.imageScaleFactor, outputStride: config.advanced.outputStride, flipHorizontal: config.advanced.flipHorizontal, minConfidence: config.advanced.minConfidence, maxPoseDetections: config.advanced.maxPoseDetections, scoreThreshold: config.advanced.scoreThreshold, nmsRadius: config.advanced.nmsRadius, detectionType: singlePose ? 'single' : 'multiple', multiplier: isMobile() ? config.advanced.multiplierDefault : config.advanced.multiplierDefaultMobile}, modelReady);
   // This sets up an event that fills the global variable "poses"
   // with an array every time new poses are detected
   poseNet.on('pose', function(results) {

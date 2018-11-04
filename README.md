@@ -1,5 +1,5 @@
-# Gesture-Detection
-### Gesture detection using PoseNet and TensorFlow
+# Better Pose Detection
+### More customizable pose detection using PoseNet and TensorFlow
 More customizable version of ml5js' PoseNet with webcam application.
 ## Application Settings
 #### Change settings in config.js
@@ -35,3 +35,9 @@ Attempts to use rear facing camera if the device has one.
 
 ___showDataPoints___  
 Shows data points from the pose array on the webpage.  
+
+___multi___ or ___multiPose___  
+Makes poseNet use multi pose Detection if set to single pose  
+
+___single___ or ___singlePose___  
+Makes poseNet use single pose Detection if set to multi pose  
