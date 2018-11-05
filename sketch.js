@@ -105,10 +105,10 @@ function modelReady() {
   let canvas = document.getElementsByTagName("canvas")[0];
 
   if (showDataPoints) {
-    let div = document.createElement("div");
-    div.id = "points";
-    div.style.display = "block";
-    document.getElementsByTagName("body")[0].appendChild(div);
+    let pre = document.createElement("pre");
+    pre.id = "points";
+    pre.style.display = "block";
+    document.getElementsByTagName("body")[0].appendChild(pre);
   }
 
   document.getElementById("status").style.display = "none";
@@ -133,7 +133,15 @@ function draw() {
 function drawKeypoints()  {
   // Loop through all the poses detected
   for (let i = 0; i < poses.length; i++) {
-    if (showDataPoints) document.getElementById("points").innerHTML = JSON.stringify(poses); // Print poses array if needed
+    if (showDataPoints) {
+      document.getElementById("points").innerHTML = syntaxHighlight(JSON.stringify(poses, null, 2)); // Print poses array if needed
+      var elements = document.getElementsByClassName("number");
+      for (var e = 0; e < elements.length; e++) {
+        let num = parseFloat(elements[e].innerHTML);
+        console.log(num);
+        if (num >= config.advanced.minConfidence && num < 1) elements[e].classList.add("confident");
+      }
+    }
     // For each pose detected, loop through all the keypoints
     let pose = poses[i].pose;
     for (let j = 0; j < pose.keypoints.length; j++) {
@@ -162,4 +170,23 @@ function drawSkeleton() {
       line(partA.position.x, partA.position.y, partB.position.x, partB.position.y);
     }
   }
+}
+
+function syntaxHighlight(json) {
+  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+    var cls = 'number';
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) {
+        cls = 'key';
+      } else {
+        cls = 'string';
+      }
+    } else if (/true|false/.test(match)) {
+      cls = 'boolean';
+    } else if (/null/.test(match)) {
+      cls = 'null';
+    }
+    return '<span class="' + cls + '">' + match + '</span>';
+  });
 }
