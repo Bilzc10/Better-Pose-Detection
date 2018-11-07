@@ -41,3 +41,9 @@ Makes poseNet use multi pose Detection if set to single pose
 
 ___single___ or ___singlePose___  
 Makes poseNet use single pose Detection if set to multi pose  
+
+___desktop___  
+Forces poseNet to use desktop settings from config, even if on mobile.  
+
+___mobile___  
+Forces poseNet to use mobile settings from config, even if on a desktop.

@@ -20,7 +20,9 @@ function isMobile() {
   return isAndroid() || isiOS();
 }
 
-const mobile = isMobile();
+const mobile = config.ignoreUrlParameters ? isMobile() : (url.searchParams.get("desktop") != null ? false : (isMobile() || url.searchParams.get("mobile") != null));
+
+console.log(mobile);
 
 let poseNet;
 let poses = [];
@@ -91,7 +93,7 @@ function setup() { // Setup PoseNet
   video.size(width, height);
 
   // Create a new poseNet method with a single detection
-  poseNet = ml5.poseNet(video, {imageScaleFactor: config.advanced.imageScaleFactor, outputStride: config.advanced.outputStride, flipHorizontal: config.advanced.flipHorizontal, minConfidence: config.advanced.minConfidence, maxPoseDetections: config.advanced.maxPoseDetections, scoreThreshold: config.advanced.scoreThreshold, nmsRadius: config.advanced.nmsRadius, detectionType: singlePose ? 'single' : 'multiple', multiplier: isMobile() ? config.advanced.multiplierDefault : config.advanced.multiplierDefaultMobile}, modelReady);
+  poseNet = ml5.poseNet(video, {imageScaleFactor: config.advanced.imageScaleFactor, outputStride: config.advanced.outputStride, flipHorizontal: config.advanced.flipHorizontal, minConfidence: config.advanced.minConfidence, maxPoseDetections: config.advanced.maxPoseDetections, scoreThreshold: config.advanced.scoreThreshold, nmsRadius: config.advanced.nmsRadius, detectionType: (singlePose ? 'single' : 'multiple'), multiplier: isMobile() ? config.advanced.multiplierDefault : config.advanced.multiplierDefaultMobile}, modelReady);
   // This sets up an event that fills the global variable "poses"
   // with an array every time new poses are detected
   poseNet.on('pose', function(results) {
