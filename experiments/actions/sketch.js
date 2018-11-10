@@ -8,6 +8,29 @@ var single = url.searchParams.get("single") != null || url.searchParams.get("sin
 var singlePose = ((single && multi) || (!single && !multi) || config.ignoreUrlParameters) ? config.singlePoseDetection : single;
 var zone = "default";
 
+var zones = {};
+
+config.zones[zone].forEach(function(item, index) {
+  let width = Math.abs(item.coords[0][0] - item.coords[1][0]);
+  let height = Math.abs(item.coords[0][1] - item.coords[1][1]);
+  for (var i1 = 0; i1 < 2; i1++) {
+    for (var i2 = 0; i2 < 2; i2++) {
+      if (item.coords[i1][i2] < 0) {
+        let coord = item.coords[i1][i2];
+         coord = (i2 == 1) ? height - coord : width - coord;
+      }
+    }
+  }
+  let x = Math.min(item.coords[0][0], item.coords[1][0]);
+  let y = Math.min(item.coords[0][1], item.coords[1][1]);
+  zones[item.name] = {
+    x: x,
+    y: y,
+    w: width,
+    h: height
+  }
+});
+
 // Detect OS and if it's mobile
 function isAndroid() {
   return /Android/i.test(navigator.userAgent);
@@ -200,28 +223,13 @@ function syntaxHighlight(json) {
 }
 
 function drawZones() {
-  config.zones[zone].forEach(function(item, index) {
-    let width = Math.abs(item.coords[0][0] - item.coords[1][0]);
-    let height = Math.abs(item.coords[0][1] - item.coords[1][1]);
-    for (var i1 = 0; i1 < 2; i1++) {
-      for (var i2 = 0; i2 < 2; i2++) {
-        if (item.coords[i1][i2] < 0) {
-          let coord = item.coords[i1][i2];
-           coord = (i2 == 1) ? height - coord : width - coord;
-        }
-      }
-    }
-    let x = Math.min(item.coords[0][0], item.coords[1][0]);
-    let y = Math.min(item.coords[0][1], item.coords[1][1]);
-
-  //ctx.translate(canvas.width, 0);
-  //ctx.scale(-1, 1);
-    ctx.strokeRect(x, y, width, height);
-
+  for (zone in zones) {
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.strokeRect(zones[zone].x, zones[zone].y, zones[zone].w, zones[zone].h);
 
     ctx.font="15px Arial";
     ctx.textAlign="center";
-    ctx.fillText(item.name, (x + width / 2), (y + height / 2));
-    //ctx.fillText(item.name, (canvas.width / 2), (canvas.height / 2));
-  });
+    ctx.fillText(zone, (zones[zone].x + zones[zone].w / 2), (zones[zone].y + zones[zone].h / 2));
+  }
 }
