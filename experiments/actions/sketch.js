@@ -11,6 +11,29 @@ var zone = (Object.keys(config.zones).find(function(e) {return e == url.searchPa
 var zones = {};
 var detects = {};
 
+var zones = {};
+
+config.zones[zone].forEach(function(item, index) {
+  let width = Math.abs(item.coords[0][0] - item.coords[1][0]);
+  let height = Math.abs(item.coords[0][1] - item.coords[1][1]);
+  for (var i1 = 0; i1 < 2; i1++) {
+    for (var i2 = 0; i2 < 2; i2++) {
+      if (item.coords[i1][i2] < 0) {
+        let coord = item.coords[i1][i2];
+         coord = (i2 == 1) ? height - coord : width - coord;
+      }
+    }
+  }
+  let x = Math.min(item.coords[0][0], item.coords[1][0]);
+  let y = Math.min(item.coords[0][1], item.coords[1][1]);
+  zones[item.name] = {
+    x: x,
+    y: y,
+    w: width,
+    h: height
+  }
+});
+
 // Detect OS and if it's mobile
 function isAndroid() {
   return /Android/i.test(navigator.userAgent);
