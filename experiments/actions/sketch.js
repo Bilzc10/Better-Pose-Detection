@@ -6,7 +6,10 @@ var faceUser = config.ignoreUrlParameters ? config.faceUserDefault : (url.search
 var multi = url.searchParams.get("multi") != null || url.searchParams.get("multiPose") != null ;
 var single = url.searchParams.get("single") != null || url.searchParams.get("singlePose") != null ;
 var singlePose = ((single && multi) || (!single && !multi) || config.ignoreUrlParameters) ? config.singlePoseDetection : single;
-var zone = "default";
+var zone = (Object.keys(config.zones).find(function(e) {return e == url.searchParams.get("zone")})) ? url.searchParams.get("zone") : "default";
+
+var zones = {};
+var detects = {};
 
 // Detect OS and if it's mobile
 function isAndroid() {
@@ -32,6 +35,10 @@ let poses = [];
 
 var useVideo = true;
 var useAudio = false;
+
+var draw = function() {
+  image(video, 0, 0, width, height);
+}
 
 function setup() { // Setup PoseNet
   createCanvas(640, 480);
@@ -109,7 +116,70 @@ function setup() { // Setup PoseNet
 function modelReady() {
   canvas = document.getElementsByTagName("canvas")[0];
   ctx = canvas.getContext("2d");
-  ready = true;
+
+  config.zones[zone].forEach(function(item, index) {
+    for (var i1 = 0; i1 < 2; i1++) {
+      for (var i2 = 0; i2 < 2; i2++) {
+        let coord = item.coords[i1][i2];
+        if (1/coord < 0) { // Check if number is snegative including neg zero
+          if (i2 == 1) item.coords[i1][i2] = canvas.height + coord;
+          else item.coords[i1][i2] = canvas.width + coord;
+        }
+      }
+    }
+    let zwidth = Math.abs(item.coords[0][0] - item.coords[1][0]);
+    let zheight = Math.abs(item.coords[0][1] - item.coords[1][1]);
+    let x = Math.min(item.coords[0][0], item.coords[1][0]);
+    let y = Math.min(item.coords[0][1], item.coords[1][1]);
+    zones[item.name] = {
+      x: x,
+      y: y,
+      x2: x + zwidth,
+      y2: y + zheight,
+      w: zwidth,
+      h: zheight,
+      active: false,
+      detects: item.detect,
+      start: item.start,
+      stop: item.stop,
+      trigger: item.trigger
+    }
+  });
+
+  for (zone in zones) {
+    zones[zone].detects.forEach(function(item, index) {
+      if (detects[item]) detects[item].push(zone);
+      else detects[item] = [zone];
+    });
+  }
+
+  if (config.flipFrontCam && faceUser) {
+    draw = function() {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+
+      image(video, 0, 0, width, height);
+
+      // We can call both functions to draw all keypoints and the skeletons
+      drawKeypoints();
+      drawSkeleton();
+
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      drawZones();
+      detectZoneCollision();
+    }
+  } else {
+    draw = function() {
+      image(video, 0, 0, width, height);
+
+      // We can call both functions to draw all keypoints and the skeletons
+      drawKeypoints();
+      drawSkeleton();
+      drawZones();
+      detectZoneCollision();
+    }
+  }
 
   if (showDataPoints) {
     let pre = document.createElement("pre");
@@ -122,23 +192,16 @@ function modelReady() {
 
   canvas.classList.add("canvasMain");
 
-  if (config.flipFrontCam && faceUser)
+  /* if (config.flipFrontCam && faceUser)
     canvas.classList.add("flip180");
   else
-    canvas.classList.remove("flip180");
+    canvas.classList.remove("flip180"); */
 }
 
-function draw() {
-  image(video, 0, 0, width, height);
 
-  // We can call both functions to draw all keypoints and the skeletons
-  drawKeypoints();
-  drawSkeleton();
-  if (ready) drawZones();
-}
 
 // A function to draw ellipses over the detected keypoints
-function drawKeypoints()  {
+function drawKeypoints(color)  {
   // Loop through all the poses detected
   for (let i = 0; i < poses.length; i++) {
     if (showDataPoints) {
@@ -146,7 +209,6 @@ function drawKeypoints()  {
       var elements = document.getElementsByClassName("number");
       for (var e = 0; e < elements.length; e++) {
         let num = parseFloat(elements[e].innerHTML);
-        console.log(num);
         if (num >= config.advanced.minConfidence && num < 1) elements[e].classList.add("confident");
       }
     }
@@ -157,6 +219,7 @@ function drawKeypoints()  {
       let keypoint = pose.keypoints[j];
       // Only draw an ellipse is the pose probability is bigger than 0.2
       if (keypoint.score > 0.2) {
+        ctx.strokeStyle = (color) ? color : config.keypointColor;
         fill(255, 255, 255);
         noStroke();
         ellipse(keypoint.position.x, keypoint.position.y, 20, 20);
@@ -166,7 +229,8 @@ function drawKeypoints()  {
 }
 
 // A function to draw the skeletons
-function drawSkeleton() {
+function drawSkeleton(color) {
+  ctx.strokeStyle = (color) ? color : config.skeletonColor;
   // Loop through all the skeletons detected
   for (let i = 0; i < poses.length; i++) {
     let skeleton = poses[i].skeleton;
@@ -199,29 +263,50 @@ function syntaxHighlight(json) {
   });
 }
 
-function drawZones() {
-  config.zones[zone].forEach(function(item, index) {
-    let width = Math.abs(item.coords[0][0] - item.coords[1][0]);
-    let height = Math.abs(item.coords[0][1] - item.coords[1][1]);
-    for (var i1 = 0; i1 < 2; i1++) {
-      for (var i2 = 0; i2 < 2; i2++) {
-        if (item.coords[i1][i2] < 0) {
-          let coord = item.coords[i1][i2];
-           coord = (i2 == 1) ? height - coord : width - coord;
+function drawZones(color) {
+  if (!color) color = config.zoneColor;
+  for (zone in zones) {
+    drawZone(zone, color)
+  }
+}
+
+function drawZone(zone, color) {
+  ctx.strokeStyle = color;
+  ctx.strokeRect(zones[zone].x, zones[zone].y, zones[zone].w, zones[zone].h);
+
+  ctx.font="15px Arial";
+  ctx.textAlign="center";
+  ctx.fillText(zone, (zones[zone].x + zones[zone].w / 2), (zones[zone].y + zones[zone].h / 2));
+}
+
+function detectZoneCollision() {
+  if (poses[0]) {
+    // Multiple poses cause issues, only take the first pose in the array for this one
+    let pose = poses[0].pose;
+    for (let j = 0; j < pose.keypoints.length; j++) {
+      // A keypoint is an object describing a body part (like rightArm or leftShoulder)
+      let keypoint = pose.keypoints[j];
+      // Only draw an ellipse is the pose probability is bigger than 0.2
+      if (keypoint.score > config.advanced.minConfidence) {
+        for (part in detects) {
+          if (keypoint.part == part) {
+            detects[part].forEach(function(item, index) {
+              let x = (config.flipFrontCam && faceUser) ? canvas.width - keypoint.position.x : keypoint.position.x;
+              if (zones[item].x < x && x < zones[item].x2 && zones[item].y < keypoint.position.y && keypoint.position.y < zones[item].y2) {
+                drawZone(item, config.detectColor);
+                zones[item].trigger();
+                if (!zones[item].active) {
+                  zones[item].active = true;
+                  zones[item].start();
+                }
+              } else if (zones[item].active) {
+                zones[item].active = false;
+                zones[item].stop();
+              }
+            });
+          }
         }
       }
     }
-    let x = Math.min(item.coords[0][0], item.coords[1][0]);
-    let y = Math.min(item.coords[0][1], item.coords[1][1]);
-
-  //ctx.translate(canvas.width, 0);
-  //ctx.scale(-1, 1);
-    ctx.strokeRect(x, y, width, height);
-
-
-    ctx.font="15px Arial";
-    ctx.textAlign="center";
-    ctx.fillText(item.name, (x + width / 2), (y + height / 2));
-    //ctx.fillText(item.name, (canvas.width / 2), (canvas.height / 2));
-  });
+  }
 }

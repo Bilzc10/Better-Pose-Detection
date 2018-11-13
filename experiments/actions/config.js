@@ -30,37 +30,81 @@ var config = {
    * false (default) - URL parameters are allowed to modify the function of the program */
 
    /* Zones - Defines zones for detection
-    * name - string
+    * name - string, MUST BE UNIQUE
     * type - 'rect' (rectangle). Currently unused, line coming soon.
-    * coords - The 2 coordinates for defining the shape of the zone. Positive coordinates are measured from origin, negative are measured from opposite origin. */
+    * coords - The 2 coordinates for defining the shape of the zone. Positive coordinates are measured from origin, negative are measured from opposite origin.
+    * detect - array, all parts that should set off a collision
+    * * * Possible Values: "nose", "leftEye", "rightEye", "leftEar", "rightEar", "leftShoulder", "rightShoulder", "leftElbow", "rightElbow", "leftWrist", "rightWrist", "leftHip", "rightHip", "leftKnee", "rightKnee", "leftAnkle", "rightAnkle"
+    * trigger - function, action to perform eevry tick that a detected part is in the box
+    * start - function, action to perform when a detected part enters the box
+    * stop - function, action to perform when a detected part leaves the box */
    zones: {
      default: [ // The default zone configuration.
        {
+         name: 'Center',
+         type: 'rect',
+         coords: [[250, 175], [390, 305]],
+         detect: ["nose"],
+         trigger: function() {
+           if (document.getElementById("headStatus").style.textDecoration == "none") document.getElementById("headStatus").style.textDecoration = "underline";
+           else document.getElementById("headStatus").style.textDecoration = "none";
+         },
+         start: function() {
+           document.getElementById("headStatus").style.display = "inline";
+           document.getElementById("headStatus").innerHTML = "HEAD IS CENTERED";
+         },
+         stop: function() {
+           document.getElementById("headStatus").innerHTML = "HEAD IS NOT CENTERED";
+         }
+       }
+     ],
+     handCorners: [ // ?zone=handCorners
+       {
          name: 'a',
          type: 'rect',
-         coords: [[0,0], [100,100]]
+         coords: [[0, 0], [100, 100]],
+         detect: ["rightWrist", "leftWrist"],
+         trigger: function() {},
+         start: function() {},
+         stop: function() {}
        },
        {
          name: 'b',
          type: 'rect',
-         coords: [[-0, -0], [-100, 100]]
+         coords: [[-0, -0], [-100, -100]],
+         detect: ["rightWrist", "leftWrist", "nose"],
+         trigger: function() {},
+         start: function() {},
+         stop: function() {}
        }
        // Additional zones can be added to the configuration here
      ],
      // Alternate zone configurations can be added here. By default these are chosen using URL parameters.
-     inverse: [
+     handCornersInverse: [ // ?zone=handCornersInverse
        {
          name: 'a',
          type: 'rect',
-         coords: [[-0,0], [-100,100]]
+         coords: [[-0,0], [-100,100]],
+         detect: ["rightWrist", "leftWrist"],
+         trigger: function() {},
+         start: function() {},
+         stop: function() {}
        },
        {
          name: 'b',
          type: 'rect',
-         coords: [[0, -0], [100, 100]]
+         coords: [[0, -0], [100, 100]],
+         detect: ["rightWrist", "leftWrist"],
+         trigger: function() {},
+         start: function() {},
+         stop: function() {}
        }
      ]
    },
+   keypointColor: "#ffffff", // Default color keypoints are drawn in. Default: #ffffff (white)
+   skeletonColor: "#ffffff", // Default color the skeleton is drawn in. Default: #ffffff (white)
+   zoneColor: "#ffffff", // Default color zones are drawn in. Default: #ffffff (white)
+   detectColor: "#ff0000", // Color zones are drawn in whena  collision is detected. Default: #ff0000 (red)
 
    // Advanced settings - See PoseNet readme for more details: https://github.com/tensorflow/tfjs-models/tree/master/posenet
    advanced: {
